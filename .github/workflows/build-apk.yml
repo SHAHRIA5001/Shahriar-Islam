@@ -165,7 +165,9 @@ jobs:
           TAG_NAME="debug-apk-build-${{ github.run_number }}-${{ github.run_attempt }}"
           RELEASE_TITLE="Debug APK Build #${{ github.run_number }}"
           
-          RELEASE_NOTES=$(cat << 'EOF'
+          # Create temporary notes file to avoid multiline bash string truncation issues
+          NOTES_FILE="$RUNNER_TEMP/release_notes.md"
+          cat << 'EOF' > "$NOTES_FILE"
           ### 📱 Automated Debug APK Build
 
           This is an automatically generated debug APK build from GitHub Actions.
@@ -177,14 +179,19 @@ jobs:
           
           > ⚠️ **Testing Notice:** This APK is signed with a temporary debug keystore and is intended for testing and validation purposes only. It is not a production release.
           EOF
-          )
           
-          echo "Creating GitHub Release with tag: $TAG_NAME"
-          gh release create "$TAG_NAME" "$ASSET_PATH" \
-            --title "$RELEASE_TITLE" \
-            --notes "$RELEASE_NOTES" \
-            --target "${{ github.sha }}" \
-            --latest
+          echo "Checking/creating release for tag: $TAG_NAME"
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release tag $TAG_NAME already exists, uploading/overwriting APK asset..."
+            gh release upload "$TAG_NAME" "$ASSET_PATH" --clobber
+          else
+            echo "Creating new GitHub Release with tag: $TAG_NAME and uploading APK asset..."
+            gh release create "$TAG_NAME" "$ASSET_PATH" \
+              --title "$RELEASE_TITLE" \
+              --notes-file "$NOTES_FILE" \
+              --target "${{ github.sha }}" \
+              --latest
+          fi
 
       - name: Report APK download result
         if: always()
