@@ -20,7 +20,7 @@ data class UserPreferencesEntity(
   @PrimaryKey val id: Int = 1,
   val totalStars: Int = 0,
   val currentUnlockedLevel: Int = 1,
-  val hintTickets: Int = 5,
+  val hintTickets: Int = 0,
   val soundEnabled: Boolean = true,
   val vibrationEnabled: Boolean = true,
   val colorblindMode: Boolean = false

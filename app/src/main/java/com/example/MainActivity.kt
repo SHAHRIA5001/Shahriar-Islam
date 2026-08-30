@@ -27,6 +27,8 @@ import com.example.ui.theme.BentoBackground
 import com.example.viewmodel.GameViewModel
 import com.example.viewmodel.LevelSelectViewModel
 
+import com.startapp.sdk.adsbase.StartAppAd
+
 enum class AppScreen {
   MISSION_MAP,
   GAMEPLAY
@@ -40,6 +42,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
+    com.example.ads.TestAdManager.instance.init(this)
     setContent {
       ArrowEscapeTheme {
         Surface(
@@ -53,6 +56,12 @@ class MainActivity : ComponentActivity() {
         }
       }
     }
+  }
+
+  @Deprecated("Deprecated in Java")
+  override fun onBackPressed() {
+    StartAppAd.onBackPressed(this)
+    super.onBackPressed()
   }
 }
 

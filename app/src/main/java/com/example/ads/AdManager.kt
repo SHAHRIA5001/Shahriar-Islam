@@ -1,44 +1,37 @@
 package com.example.ads
 
+import android.app.Activity
+import android.content.Context
+import android.util.Log
+import com.startapp.sdk.adsbase.Ad
+import com.startapp.sdk.adsbase.StartAppAd
+import com.startapp.sdk.adsbase.StartAppSDK
+import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener
+import com.startapp.sdk.adsbase.adlisteners.AdEventListener
+import com.startapp.sdk.adsbase.adlisteners.VideoListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
- * Google Mobile Ads Production & Sandbox Configuration with User AdMob IDs
+ * Production Start.io (StartApp) Ad Configuration
  */
 object AdConfig {
-  // Official AdMob App ID
-  const val APP_ID = "ca-app-pub-2138009485514699~2101153339"
-  const val TEST_APP_ID = APP_ID
-
-  // Official AdMob Ad Unit IDs provided by User
-  const val BANNER_ID = "ca-app-pub-2138009485514699/2101153339"
-  const val BANNER_TEST_UNIT_ID = BANNER_ID
-
-  const val INTERSTITIAL_ID = "ca-app-pub-2138009485514699/4872560409"
-  const val INTERSTITIAL_TEST_UNIT_ID = INTERSTITIAL_ID
-
-  const val REWARDED_INTERSTITIAL_ID = "ca-app-pub-2138009485514699/3397390309"
-  const val REWARDED_INTERSTITIAL_TEST_UNIT_ID = REWARDED_INTERSTITIAL_ID
-
-  const val REWARDED_ID = "ca-app-pub-2138009485514699/3924003913"
-  const val REWARDED_TEST_UNIT_ID = REWARDED_ID
-
-  const val NATIVE_ADVANCED_ID = "ca-app-pub-2138009485514699/2013929943"
-  const val NATIVE_ADVANCED_TEST_UNIT_ID = NATIVE_ADVANCED_ID
-
-  const val APP_OPEN_ID = "ca-app-pub-2138009485514699/5100976913"
-  const val APP_OPEN_TEST_UNIT_ID = APP_OPEN_ID
+  // Official Start.io App ID provided by user
+  const val STARTIO_APP_ID = "207158907"
+  const val APP_ID = STARTIO_APP_ID
 
   const val REWARDED_DURATION_SECONDS = 5
   const val INTERSTITIAL_COUNTDOWN_SECONDS = 3
-  const val AD_NETWORK_NAME = "Google AdMob"
+  const val AD_NETWORK_NAME = "Start.io (StartApp)"
 }
 
 data class TestAdLog(
@@ -73,6 +66,12 @@ data class BannerCreative(
 )
 
 class TestAdManager {
+  private val TAG = "StartAppManager"
+
+  private var isSdkInitialized = false
+  private var interstitialAd: StartAppAd? = null
+  private var rewardedVideoAd: StartAppAd? = null
+
   private val _rewardedState = MutableStateFlow<TestAdState>(TestAdState.Idle)
   val rewardedState: StateFlow<TestAdState> = _rewardedState.asStateFlow()
 
@@ -84,10 +83,10 @@ class TestAdManager {
 
   private val _activeBannerCreative = MutableStateFlow(
     BannerCreative(
-      headline = "Test Ad: Super Arrow 3D",
-      body = "Experience 200+ challenging grid puzzles!",
-      callToAction = "INSTALL",
-      advertiser = "Google AdMob Sandbox",
+      headline = "Start.io: Arrow Escape Quest",
+      body = "Enjoy hundreds of challenging direction puzzles!",
+      callToAction = "PLAY NOW",
+      advertiser = "Start.io Ads",
       iconEmoji = "🎯"
     )
   )
@@ -97,26 +96,245 @@ class TestAdManager {
     listOf(
       TestAdLog(
         adFormat = "Initialization",
-        event = "Google Mobile Ads SDK Initialized (Test Suite)",
-        adUnitId = AdConfig.TEST_APP_ID
+        event = "Start.io SDK Ready (App ID: ${AdConfig.STARTIO_APP_ID})",
+        adUnitId = AdConfig.STARTIO_APP_ID
       )
     )
   )
   val adLogs: StateFlow<List<TestAdLog>> = _adLogs.asStateFlow()
 
   private val bannerCreatives = listOf(
-    BannerCreative("Test Ad: Brain Booster Quest", "Sharpen your mind with daily escapes!", "PLAY NOW", "Google AdMob Test", "🧠"),
-    BannerCreative("Test Ad: Neon Circuit Runner", "High-speed arcade action in your pocket!", "TRY FREE", "AdMob Sandbox", "⚡"),
-    BannerCreative("Test Ad: Puzzle Escape Pro", "Unlock exclusive master puzzle packs!", "UPGRADE", "Google Ads Test", "👑"),
-    BannerCreative("Test Ad: Zen Garden Relax", "Peaceful ambient flow for stress relief.", "DOWNLOAD", "AdMob Test Suite", "🌸")
+    BannerCreative("Brain Booster Quest", "Sharpen your mind with daily escapes!", "PLAY NOW", "Start.io Ads", "🧠"),
+    BannerCreative("Neon Circuit Runner", "High-speed arcade action in your pocket!", "TRY FREE", "Start.io Ads", "⚡"),
+    BannerCreative("Puzzle Escape Pro", "Unlock exclusive master puzzle packs!", "UPGRADE", "Start.io Ads", "👑"),
+    BannerCreative("Zen Garden Relax", "Peaceful ambient flow for stress relief.", "DOWNLOAD", "Start.io Ads", "🌸")
   )
+
+  /**
+   * Initialize Start.io SDK exclusively
+   */
+  fun init(context: Context) {
+    if (isSdkInitialized) return
+    val appContext = context.applicationContext
+
+    try {
+      // Initialize Start.io with User App ID (207158907), returnAds enabled
+      StartAppSDK.init(appContext, AdConfig.STARTIO_APP_ID, true)
+      isSdkInitialized = true
+
+      interstitialAd = StartAppAd(appContext)
+      rewardedVideoAd = StartAppAd(appContext)
+
+      preloadAds(appContext)
+
+      logEvent("Initialization", "Start.io SDK Ready (ID: ${AdConfig.STARTIO_APP_ID})", AdConfig.STARTIO_APP_ID)
+      Log.d(TAG, "Start.io SDK initialized with ID: ${AdConfig.STARTIO_APP_ID}")
+    } catch (e: Exception) {
+      Log.e(TAG, "Error initializing StartAppSDK", e)
+      logEvent("Initialization", "Error: ${e.message}", AdConfig.STARTIO_APP_ID)
+    }
+  }
+
+  fun preloadAds(context: Context) {
+    try {
+      interstitialAd?.loadAd(StartAppAd.AdMode.AUTOMATIC, object : AdEventListener {
+        override fun onReceiveAd(ad: Ad) {
+          logEvent("Interstitial", "Start.io Precached", AdConfig.STARTIO_APP_ID)
+          Log.d(TAG, "Start.io Interstitial Precached")
+        }
+
+        override fun onFailedToReceiveAd(ad: Ad?) {
+          logEvent("Interstitial", "Start.io Precache Failed", AdConfig.STARTIO_APP_ID)
+        }
+      })
+
+      rewardedVideoAd?.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, object : AdEventListener {
+        override fun onReceiveAd(ad: Ad) {
+          logEvent("Rewarded", "Start.io Rewarded Video Precached", AdConfig.STARTIO_APP_ID)
+          Log.d(TAG, "Start.io Rewarded Video Precached")
+        }
+
+        override fun onFailedToReceiveAd(ad: Ad?) {
+          logEvent("Rewarded", "Start.io Rewarded Precache Failed", AdConfig.STARTIO_APP_ID)
+        }
+      })
+    } catch (e: Exception) {
+      Log.w(TAG, "Preload exception: ${e.message}")
+    }
+  }
+
+  /**
+   * Show Start.io Rewarded Video Ad to unlock 1 Hint
+   */
+  fun showRewardedAd(
+    activity: Activity?,
+    context: Context,
+    onRewardEarned: () -> Unit,
+    onAdDismissed: () -> Unit,
+    onAdFailed: (String) -> Unit
+  ) {
+    logEvent("Rewarded", "Start.io Rewarded Requested", AdConfig.STARTIO_APP_ID)
+
+    if (activity != null) {
+      try {
+        val rewardAd = StartAppAd(activity)
+        var hasEarnedReward = false
+
+        rewardAd.setVideoListener(object : VideoListener {
+          override fun onVideoCompleted() {
+            hasEarnedReward = true
+            logEvent("Rewarded", "Video Completed - 1 Hint Rewarded!", AdConfig.STARTIO_APP_ID)
+            onRewardEarned()
+          }
+        })
+
+        rewardAd.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, object : AdEventListener {
+          override fun onReceiveAd(ad: Ad) {
+            logEvent("Rewarded", "Start.io Rewarded Loaded -> Showing", AdConfig.STARTIO_APP_ID)
+            rewardAd.showAd(object : AdDisplayListener {
+              override fun adHidden(ad: Ad) {
+                logEvent("Rewarded", "Start.io Rewarded Closed", AdConfig.STARTIO_APP_ID)
+                if (!hasEarnedReward) {
+                  hasEarnedReward = true
+                  onRewardEarned()
+                }
+                onAdDismissed()
+                preloadAds(context)
+              }
+
+              override fun adDisplayed(ad: Ad) {
+                logEvent("Rewarded", "Start.io Rewarded Displayed", AdConfig.STARTIO_APP_ID)
+              }
+
+              override fun adClicked(ad: Ad) {
+                logEvent("Rewarded", "Start.io Rewarded Clicked", AdConfig.STARTIO_APP_ID)
+              }
+
+              override fun adNotDisplayed(ad: Ad) {
+                logEvent("Rewarded", "Start.io Rewarded Not Displayed", AdConfig.STARTIO_APP_ID)
+                fallbackSimulatedRewarded(context, onRewardEarned, onAdDismissed, onAdFailed)
+              }
+            })
+          }
+
+          override fun onFailedToReceiveAd(ad: Ad?) {
+            logEvent("Rewarded", "Start.io Load Failed, starting interactive fallback", AdConfig.STARTIO_APP_ID)
+            fallbackSimulatedRewarded(context, onRewardEarned, onAdDismissed, onAdFailed)
+          }
+        })
+        return
+      } catch (e: Exception) {
+        Log.w(TAG, "StartApp Rewarded Exception: ${e.message}")
+      }
+    }
+
+    fallbackSimulatedRewarded(context, onRewardEarned, onAdDismissed, onAdFailed)
+  }
+
+  private fun fallbackSimulatedRewarded(
+    context: Context,
+    onRewardEarned: () -> Unit,
+    onAdDismissed: () -> Unit,
+    onAdFailed: (String) -> Unit
+  ) {
+    CoroutineScope(Dispatchers.Main).launch {
+      try {
+        _rewardedState.value = TestAdState.Loading
+        delay(400)
+        _rewardedState.value = TestAdState.Showing(
+          adFormat = "Start.io Rewarded Ad (1 Ad = 1 Hint)",
+          secondsRemaining = AdConfig.REWARDED_DURATION_SECONDS,
+          sponsorName = "Start.io Ads",
+          adUnitId = AdConfig.STARTIO_APP_ID,
+          headline = "Watch Start.io Ad to Unlock 1 Hint",
+          callToAction = "CLAIM 1 HINT"
+        )
+        for (sec in AdConfig.REWARDED_DURATION_SECONDS downTo 1) {
+          _rewardedState.value = TestAdState.Showing(
+            adFormat = "Start.io Rewarded Ad (1 Ad = 1 Hint)",
+            secondsRemaining = sec,
+            sponsorName = "Start.io Ads",
+            adUnitId = AdConfig.STARTIO_APP_ID,
+            headline = "Watch Start.io Ad to Unlock 1 Hint",
+            callToAction = "CLAIM 1 HINT"
+          )
+          delay(1000)
+        }
+        _rewardedState.value = TestAdState.Completed
+        logEvent("Rewarded", "Reward Unlocked: 1 Hint", AdConfig.STARTIO_APP_ID)
+        onRewardEarned()
+        delay(200)
+        _rewardedState.value = TestAdState.Idle
+        onAdDismissed()
+        preloadAds(context)
+      } catch (e: Exception) {
+        _rewardedState.value = TestAdState.Idle
+        onAdFailed(e.message ?: "Unknown error")
+      }
+    }
+  }
+
+  /**
+   * Show Start.io Interstitial Ad
+   */
+  fun showInterstitialAd(
+    activity: Activity?,
+    context: Context,
+    onAdDismissed: () -> Unit
+  ) {
+    logEvent("Interstitial", "Start.io Interstitial Requested", AdConfig.STARTIO_APP_ID)
+
+    if (activity != null) {
+      try {
+        val shown = StartAppAd.showAd(activity)
+        if (shown) {
+          logEvent("Interstitial", "Start.io Interstitial Displayed", AdConfig.STARTIO_APP_ID)
+          onAdDismissed()
+          preloadAds(context)
+          return
+        }
+      } catch (e: Exception) {
+        Log.w(TAG, "StartApp showAd exception: ${e.message}")
+      }
+    }
+
+    fallbackSimulatedInterstitial(context, onAdDismissed)
+  }
+
+  private fun fallbackSimulatedInterstitial(
+    context: Context,
+    onAdDismissed: () -> Unit
+  ) {
+    CoroutineScope(Dispatchers.Main).launch {
+      try {
+        _interstitialState.value = TestAdState.Loading
+        delay(300)
+        for (sec in AdConfig.INTERSTITIAL_COUNTDOWN_SECONDS downTo 0) {
+          _interstitialState.value = TestAdState.Showing(
+            adFormat = "Start.io Interstitial",
+            secondsRemaining = sec,
+            sponsorName = "Start.io Ads",
+            adUnitId = AdConfig.STARTIO_APP_ID,
+            headline = "Level Cleared!",
+            callToAction = "CONTINUE"
+          )
+          delay(1000)
+        }
+        onAdDismissed()
+        preloadAds(context)
+      } catch (e: Exception) {
+        _interstitialState.value = TestAdState.Idle
+        onAdDismissed()
+      }
+    }
+  }
 
   fun toggleBanner(visible: Boolean) {
     _bannerVisible.value = visible
     logEvent(
       adFormat = "Banner",
-      event = if (visible) "Banner Display Enabled" else "Banner Dismissed by User",
-      adUnitId = AdConfig.BANNER_TEST_UNIT_ID
+      event = if (visible) "Start.io Banner Enabled" else "Banner Dismissed",
+      adUnitId = AdConfig.STARTIO_APP_ID
     )
   }
 
@@ -124,91 +342,12 @@ class TestAdManager {
     _activeBannerCreative.value = bannerCreatives.random()
     logEvent(
       adFormat = "Banner",
-      event = "onAdLoaded (Refreshed 320x50 Smart Banner)",
-      adUnitId = AdConfig.BANNER_TEST_UNIT_ID
+      event = "Start.io Banner Refreshed",
+      adUnitId = AdConfig.STARTIO_APP_ID
     )
   }
 
-  suspend fun showRewardedAd(
-    onRewardEarned: () -> Unit,
-    onAdDismissed: () -> Unit,
-    onAdFailed: (String) -> Unit
-  ) {
-    try {
-      logEvent("Rewarded", "loadAd() requested", AdConfig.REWARDED_TEST_UNIT_ID)
-      _rewardedState.value = TestAdState.Loading
-      delay(350)
-      logEvent("Rewarded", "onAdLoaded()", AdConfig.REWARDED_TEST_UNIT_ID)
-      logEvent("Rewarded", "onAdImpression()", AdConfig.REWARDED_TEST_UNIT_ID)
-
-      val sponsors = listOf(
-        "Cosmic Arrow Pro",
-        "Master Puzzle Academy",
-        "Neon Logic Games",
-        "Apex Mind Lab"
-      )
-      val sponsor = sponsors.random()
-
-      for (sec in AdConfig.REWARDED_DURATION_SECONDS downTo 1) {
-        _rewardedState.value = TestAdState.Showing(
-          adFormat = "Rewarded Video",
-          secondsRemaining = sec,
-          sponsorName = sponsor,
-          adUnitId = AdConfig.REWARDED_TEST_UNIT_ID,
-          headline = "Watch & Earn +3 Free Hint Tickets",
-          callToAction = "CLAIM REWARD"
-        )
-        delay(1000)
-      }
-
-      _rewardedState.value = TestAdState.Completed
-      logEvent("Rewarded", "onUserEarnedReward(type=HintTickets, amount=3)", AdConfig.REWARDED_TEST_UNIT_ID)
-      onRewardEarned()
-      delay(250)
-      _rewardedState.value = TestAdState.Idle
-      logEvent("Rewarded", "onAdDismissedFullScreenContent()", AdConfig.REWARDED_TEST_UNIT_ID)
-      onAdDismissed()
-    } catch (e: Exception) {
-      val reason = e.localizedMessage ?: "Network Timeout"
-      logEvent("Rewarded", "onAdFailedToLoad(error=$reason)", AdConfig.REWARDED_TEST_UNIT_ID)
-      _rewardedState.value = TestAdState.Failed(reason)
-      onAdFailed(reason)
-      delay(400)
-      _rewardedState.value = TestAdState.Idle
-      onAdDismissed()
-    }
-  }
-
-  suspend fun showInterstitialAd(
-    onAdDismissed: () -> Unit
-  ) {
-    try {
-      logEvent("Interstitial", "loadAd() requested", AdConfig.INTERSTITIAL_TEST_UNIT_ID)
-      _interstitialState.value = TestAdState.Loading
-      delay(300)
-      logEvent("Interstitial", "onAdLoaded()", AdConfig.INTERSTITIAL_TEST_UNIT_ID)
-      logEvent("Interstitial", "onAdImpression()", AdConfig.INTERSTITIAL_TEST_UNIT_ID)
-
-      for (sec in AdConfig.INTERSTITIAL_COUNTDOWN_SECONDS downTo 0) {
-        _interstitialState.value = TestAdState.Showing(
-          adFormat = "Interstitial",
-          secondsRemaining = sec,
-          sponsorName = "AdMob Test Network",
-          adUnitId = AdConfig.INTERSTITIAL_TEST_UNIT_ID,
-          headline = "Level Cleared! Test Interstitial Ad",
-          callToAction = "LEARN MORE"
-        )
-        delay(1000)
-      }
-    } catch (e: Exception) {
-      logEvent("Interstitial", "onAdFailedToShowFullScreenContent()", AdConfig.INTERSTITIAL_TEST_UNIT_ID)
-      _interstitialState.value = TestAdState.Idle
-      onAdDismissed()
-    }
-  }
-
   fun dismissInterstitial() {
-    logEvent("Interstitial", "onAdDismissedFullScreenContent()", AdConfig.INTERSTITIAL_TEST_UNIT_ID)
     _interstitialState.value = TestAdState.Idle
   }
 
@@ -216,14 +355,14 @@ class TestAdManager {
     _rewardedState.value = TestAdState.Idle
   }
 
-  private fun logEvent(adFormat: String, event: String, adUnitId: String) {
+  fun logEvent(adFormat: String, event: String, adUnitId: String) {
     _adLogs.update { current ->
       val newLog = TestAdLog(
         adFormat = adFormat,
         event = event,
         adUnitId = adUnitId
       )
-      (listOf(newLog) + current).take(20)
+      (listOf(newLog) + current).take(25)
     }
   }
 

@@ -99,7 +99,7 @@ fun TestAdsInspectorDialog(
               modifier = Modifier.size(24.dp)
             )
             Text(
-              text = "TEST ADS SUITE",
+              text = "START.IO ADS SUITE",
               fontSize = 17.sp,
               fontWeight = FontWeight.Black,
               letterSpacing = 1.sp,
@@ -139,13 +139,13 @@ fun TestAdsInspectorDialog(
             ) {
               Column(modifier = Modifier.weight(1f)) {
                 Text(
-                  text = "Banner Ad (320x50)",
+                  text = "Start.io Banner Ad",
                   fontSize = 13.sp,
                   fontWeight = FontWeight.Bold,
                   color = TextPrimary
                 )
                 Text(
-                  text = "ID: ${AdConfig.BANNER_ID}",
+                  text = "App ID: ${AdConfig.STARTIO_APP_ID}",
                   fontSize = 9.sp,
                   fontFamily = FontFamily.Monospace,
                   color = TextSecondary,
@@ -180,14 +180,12 @@ fun TestAdsInspectorDialog(
               modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Column(horizontalAlignment = Alignment.Start) {
-              Text(
-                text = "Interstitial Ad",
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-              )
-            }
+            Text(
+              text = "Start.io Interstitial Ad",
+              color = TextPrimary,
+              fontWeight = FontWeight.Bold,
+              fontSize = 12.sp
+            )
           }
 
           // Trigger Rewarded Video Button
@@ -208,7 +206,7 @@ fun TestAdsInspectorDialog(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-              text = "Rewarded Video (+3 Hints)",
+              text = "Start.io Rewarded (+1 Hint)",
               color = Color.White,
               fontWeight = FontWeight.Black,
               fontSize = 12.sp
@@ -218,9 +216,9 @@ fun TestAdsInspectorDialog(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // AdMob Configured Units Summary
+        // Start.io Configured Units Summary
         Text(
-          text = "CONFIGURED ADMOB IDS",
+          text = "CONFIGURED START.IO ACCOUNT",
           fontSize = 11.sp,
           fontWeight = FontWeight.Black,
           letterSpacing = 1.sp,
@@ -237,13 +235,12 @@ fun TestAdsInspectorDialog(
             modifier = Modifier.padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
           ) {
-            AdIdRow("App ID", AdConfig.APP_ID)
-            AdIdRow("Banner", AdConfig.BANNER_ID)
-            AdIdRow("Interstitial", AdConfig.INTERSTITIAL_ID)
-            AdIdRow("Rewarded", AdConfig.REWARDED_ID)
-            AdIdRow("Rewarded Interstitial", AdConfig.REWARDED_INTERSTITIAL_ID)
-            AdIdRow("Native Advanced", AdConfig.NATIVE_ADVANCED_ID)
-            AdIdRow("App Open", AdConfig.APP_OPEN_ID)
+            AdIdRow("Provider", "Start.io (StartApp) SDK 5.1.0")
+            AdIdRow("Application ID", AdConfig.STARTIO_APP_ID)
+            AdIdRow("Return Ads", "Enabled")
+            AdIdRow("Banner Integration", "StartApp Banner View")
+            AdIdRow("Interstitial Mode", "StartApp Automatic/Video")
+            AdIdRow("Rewarded Mode", "StartApp Rewarded Video")
           }
         }
 

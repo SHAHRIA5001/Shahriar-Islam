@@ -145,7 +145,7 @@ fun TestInterstitialDialog(
                 textAlign = TextAlign.Center
               )
               Text(
-                text = "AdMob Interstitial Unit ID:\n${AdConfig.INTERSTITIAL_ID}",
+                text = "Start.io App ID:\n${AdConfig.STARTIO_APP_ID}",
                 fontSize = 10.sp,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,

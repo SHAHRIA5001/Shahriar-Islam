@@ -1,5 +1,5 @@
 {
-  "name": "Puzzle Escape",
+  "name": "Arrow Escape",
   "description": "A grid-based directional puzzle game with 200+ challenging levels, smart hints, and progression map.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -53,7 +53,7 @@ data class LevelSelectUiState(
   val totalMaxStars: Int = LevelCatalog.TOTAL_LEVELS * 3,
   val completedLevelsCount: Int = 0,
   val currentUnlockedLevelId: Int = 1,
-  val hintTickets: Int = 5
+  val hintTickets: Int = 0
 )
 
 class LevelSelectViewModel(application: Application) : AndroidViewModel(application) {

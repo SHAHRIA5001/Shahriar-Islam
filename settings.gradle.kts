@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Puzzle Escape"
+rootProject.name = "Arrow Escape"
 
 include(":app")

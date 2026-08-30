@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.engine.LevelCatalog
 import com.example.model.GameStatus
@@ -46,6 +48,8 @@ fun GameScreen(
   var showTestAdsInspector by remember { mutableStateOf(false) }
   val snackbarHostState = remember { SnackbarHostState() }
   val bannerCreative by viewModel.bannerCreative.collectAsState()
+  val context = LocalContext.current
+  val activity = context as? Activity
 
   LaunchedEffect(uiState.adMessage) {
     uiState.adMessage?.let { msg ->
@@ -109,7 +113,7 @@ fun GameScreen(
       GameActionBar(
         hintTickets = uiState.hintTickets,
         isInteractive = isInteractive,
-        onHintClick = { viewModel.requestHint() },
+        onHintClick = { viewModel.requestHint(activity) },
         onResetClick = { viewModel.resetLevel() },
         onMapClick = onBackToMap
       )
@@ -134,7 +138,7 @@ fun GameScreen(
       onNextLevel = {
         // Trigger Interstitial Ad test every 3 levels or on demand
         if (uiState.level.levelId % 3 == 0) {
-          viewModel.triggerInterstitialAd()
+          viewModel.triggerInterstitialAd(activity)
         }
         viewModel.nextLevel()
       },
@@ -150,7 +154,7 @@ fun GameScreen(
       onRetry = { viewModel.resetLevel() },
       onHintAd = {
         viewModel.resetLevel()
-        viewModel.requestRewardedAdForTickets()
+        viewModel.requestRewardedAdForTickets(activity)
       },
       onMapClick = onBackToMap
     )

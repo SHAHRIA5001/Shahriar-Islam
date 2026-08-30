@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -342,7 +344,7 @@ fun GameActionBar(
       }
     }
 
-    // 2. Hint Button in Bento Primary with badge
+    // 2. Hint Button in Bento Primary with Lock/Unlock badge
     Surface(
       modifier = Modifier
         .weight(1.5f)
@@ -357,30 +359,30 @@ fun GameActionBar(
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(horizontal = 14.dp),
+          .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
       ) {
         Icon(
-          imageVector = Icons.Filled.AutoAwesome,
-          contentDescription = "Hint",
+          imageVector = if (hintTickets > 0) Icons.Filled.AutoAwesome else Icons.Filled.Lock,
+          contentDescription = if (hintTickets > 0) "Use Hint" else "Unlock Hint with Ad",
           tint = AmberGold,
           modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Column {
           Text(
-            text = "HINT",
+            text = if (hintTickets > 0) "HINT READY" else "HINT (LOCKED)",
             fontWeight = FontWeight.Black,
-            letterSpacing = 1.5.sp,
+            letterSpacing = 1.2.sp,
             fontSize = 11.sp,
             color = Color.White
           )
           Text(
-            text = if (hintTickets > 0) "TICKETS: $hintTickets" else "REWARD AD",
+            text = if (hintTickets > 0) "TAP TO USE (1 HINT)" else "WATCH AD (1 HINT)",
             fontSize = 9.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.White.copy(alpha = 0.8f)
+            fontWeight = FontWeight.Bold,
+            color = Color.White.copy(alpha = 0.85f)
           )
         }
       }

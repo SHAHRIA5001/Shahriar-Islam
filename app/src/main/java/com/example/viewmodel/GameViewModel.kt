@@ -1,5 +1,6 @@
 package com.example.viewmodel
 
+import android.app.Activity
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -408,7 +409,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
-  fun requestHint() {
+  fun requestHint(activity: Activity? = null) {
     val state = _uiState.value
     if (state.gameStatus != GameStatus.PLAYING || state.inputState != InputState.IDLE) return
 
@@ -417,48 +418,49 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
       if (hasFreeTicket) {
         showComputedHint()
       } else {
-        showRewardedAdForHint()
+        // Hint is locked until user watches 1 ad (1 ad = 1 hint)
+        showRewardedAdForHint(activity = activity)
       }
     }
   }
 
-  fun requestRewardedAdForTickets() {
+  fun requestRewardedAdForTickets(activity: Activity? = null) {
     viewModelScope.launch {
-      showRewardedAdForHint(giveTickets = 3)
+      showRewardedAdForHint(activity = activity)
     }
   }
 
-  private fun showRewardedAdForHint(giveTickets: Int = 1) {
+  private fun showRewardedAdForHint(activity: Activity? = null) {
     _uiState.update {
       it.copy(
         isAdShowing = true,
         adSecondsRemaining = AdConfig.REWARDED_DURATION_SECONDS,
-        adSponsor = "Hyper Arrow Booster"
+        adSponsor = "Google AdMob"
       )
     }
 
-    viewModelScope.launch {
-      adManager.showRewardedAd(
-        onRewardEarned = {
-          viewModelScope.launch {
-            repository.addHintTicket(giveTickets)
-            showComputedHint()
-          }
-        },
-        onAdDismissed = {
-          _uiState.update { it.copy(isAdShowing = false, adMessage = null) }
-        },
-        onAdFailed = { reason ->
-          _uiState.update {
-            it.copy(
-              isAdShowing = false,
-              adMessage = "Ad unavailable ($reason). Hint awarded anyway!"
-            )
-          }
+    adManager.showRewardedAd(
+      activity = activity,
+      context = getApplication(),
+      onRewardEarned = {
+        viewModelScope.launch {
+          // 1 Ad = 1 Hint unlocked & shown
           showComputedHint()
         }
-      )
-    }
+      },
+      onAdDismissed = {
+        _uiState.update { it.copy(isAdShowing = false, adMessage = null) }
+      },
+      onAdFailed = { reason ->
+        _uiState.update {
+          it.copy(
+            isAdShowing = false,
+            adMessage = "Ad status: $reason. 1 Hint unlocked!"
+          )
+        }
+        showComputedHint()
+      }
+    )
   }
 
   private fun showComputedHint() {
@@ -490,14 +492,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     _uiState.update { it.copy(isAdShowing = false) }
   }
 
-  fun triggerInterstitialAd() {
-    viewModelScope.launch {
-      adManager.showInterstitialAd(
-        onAdDismissed = {
-          _uiState.update { it.copy(isInterstitialShowing = false) }
-        }
-      )
-    }
+  fun triggerInterstitialAd(activity: Activity? = null) {
+    adManager.showInterstitialAd(
+      activity = activity,
+      context = getApplication(),
+      onAdDismissed = {
+        _uiState.update { it.copy(isInterstitialShowing = false) }
+      }
+    )
   }
 
   fun dismissInterstitialAd() {

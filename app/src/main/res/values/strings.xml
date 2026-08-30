@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Puzzle Escape</string>
+    <string name="app_name">Arrow Escape</string>
+    <string name="google_app_id" translatable="false">1:54495944365:android:pxvkmq</string>
 </resources>
