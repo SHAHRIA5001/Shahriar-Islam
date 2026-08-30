@@ -35,37 +35,44 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
 
-      - name: Identify and Rename APK
+      - name: Locate and Prepare APK
         run: |
           mkdir -p build/outputs/release
           APK_PATH=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
           if [ -n "$APK_PATH" ]; then
             cp "$APK_PATH" build/outputs/release/app-release.apk
-            echo "APK generated at build/outputs/release/app-release.apk"
+            echo "Found APK: $APK_PATH -> Copied to build/outputs/release/app-release.apk"
           else
-            echo "Error: APK file not found!" && exit 1
+            echo "Error: Release APK not found!" && exit 1
           fi
 
-      - name: Determine Release Tag & Title
-        id: release_info
+      - name: Create and Push Automatic Git Tag
+        id: auto_tag
         run: |
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG_NAME="${GITHUB_REF#refs/tags/}"
-            echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
-            echo "title=Release $TAG_NAME" >> $GITHUB_OUTPUT
+            echo "Using existing tag: $TAG_NAME"
           else
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            DATE_STR=$(date +'%Y.%m.%d-%H%M')
-            TAG_NAME="v$DATE_STR-$SHORT_SHA"
-            echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
-            echo "title=Build $TAG_NAME" >> $GITHUB_OUTPUT
+            TAG_NAME="v1.0.${{ github.run_number }}"
+            echo "Generating automatic tag: $TAG_NAME"
+            
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            
+            # Create annotated tag and push to repository
+            git tag -a "$TAG_NAME" -m "Automated Release $TAG_NAME (Build #${{ github.run_number }})"
+            git push origin "$TAG_NAME" || true
           fi
+          
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "title=Release $TAG_NAME" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release & Upload APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.release_info.outputs.tag }}
-          name: ${{ steps.release_info.outputs.title }}
+          tag_name: ${{ steps.auto_tag.outputs.tag }}
+          name: ${{ steps.auto_tag.outputs.title }}
+          target_commitish: ${{ github.sha }}
           draft: false
           prerelease: false
           generate_release_notes: true
